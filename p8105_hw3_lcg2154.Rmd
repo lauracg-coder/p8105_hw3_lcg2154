@@ -110,6 +110,7 @@ Using your tidied data set, aggregate across minutes to create a total activity 
 pivot_wider(names_from = "day", 
   values_from = "total_activity_df") %>%
   knitr::kable() 
+# Talk more about trends
 ```
 **Total Activity Data Trend**:
 Based on the table above, there seems to be a trend in increase of activity on weekends in the beginning weeks (week 1 and 2). Then the values begin to increase significantly during the weekdays in subsequent weeks. Overall there is indirect proportional relationship between weekdays and weekend: as activity count increases during the weekends, the activity count of weekdays decreases and vice-versa. 
@@ -118,13 +119,77 @@ Make a single-panel plot that shows the 24-hour activity time courses for each d
 ```{r}
 accelerometer_df %>%
   ggplot(aes(x = time, y = activity_count, color = day)) + 
-  geom_point(alpha = 0.5) +
+  geom_line(size = 1.5) +
   #geom_smooth(aes(group = day), se = FALSE) +
   labs(
     title = "24hr activity time colored by day of the week",
-    x = "24-hour activity time (minutes)",
-    y = "Activity per hour ")
+    x = " Activity time (minutes)",
+    y = "Activity Count ")
+#fix by aesthetics, add more transparency 
+# talk more about trends
 ```
 **Description** 
 Based on the single-panel plot above, we observe a greater activity count on days like Saturday and Sunday. The overall activity count seems to increase for most days, including weekdays, later in the 24-hour activity cycle around minute 1400. 
+
+## Problem 3
+
+Import data
+```{r}
+library(p8105.datasets)
+data("ny_noaa")
+```
+Write a short description of the data set, noting the size and structure of the data, describing some key variables, and indicating the extent to which missing data is an issue.
+```{r}
+ny_noaa_df = ny_noaa %>% separate('date', c( 'year','month','day')) %>% 
+  mutate(
+    day = factor(day), 
+    prcp =  prcp/10,
+    prcp = as.integer(prcp), 
+    tmax = as.numeric(tmax), 
+    tmin = as.numeric(tmin), 
+    tmax = tmax/10,
+    tmin = tmin/10) %>% 
+  drop_na()
+# for snowfall what are the most commonly observed values? do count from first problem
+```
+
+The data set drew information from the National Oceanic and Atmospheric Association (NOAA) to report on 5 variables, `r ls(ny_noaa_df)`, for New York State Weather Stations from January 1, 1981 through December 31, 2010. There are a total of `r nrow(ny_noaa_df)` rows and `rncol(ny_noaa_df)` columns in our final dataset. 
+
+Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
+```{r}
+Jan_July_averagemax_df =  ny_noaa_df  %>% 
+  group_by(month, year, id) %>% 
+  filter(month %in% c("01","07")) %>% 
+  summarize(average_tmax = mean(tmax)) %>% 
+  mutate( year = as.numeric(year)) %>%
+  ggplot(aes(x = year, y = average_tmax, group = id)) +
+  geom_point() +
+  geom_path() +
+  facet_grid(~ month) +
+  labs( 
+     title = "Mean average temperature for January and July across stations and years", 
+      x = "year", 
+     y = "average max temperature(C)")
+#structure is conserving between stations, one year warmer than other
+```
+
+Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option)
+```{r}
+tmax_tmin_df =
+  ny_noaa_df %>%
+  ggplot(aes(x = tmin, y = tmax)) + geom_hex()
+```
+(ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+```{r}
+snowfall_df = 
+  ny_noaa_df %>%
+  drop_na() %>%
+  filter( 'snow' > 0, 'snow' < 100 ) %>%
+  ggplot(aes(x = year , y = snow, color = year)) +
+  geom_boxplot() +
+  labs( x = "Year", 
+        y = "Snowfall Values (mm)")
+```
+
+
 
