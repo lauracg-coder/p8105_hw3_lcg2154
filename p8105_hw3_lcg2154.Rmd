@@ -1,26 +1,89 @@
 ---
-title: "Homework 3"
+title: "Homework 3 Solutions"
 author: Laura Gomez
 output: github_document
 ---
 
-```{r setup}
+```{r setup, include=FALSE}
 library(tidyverse)
 library(p8105.datasets)
-data("instacart")
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = 0.6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
 ```
 
 ## Problem 1
 
+```{r}
+data("instacart")
+```
+
+This data set contains `r nrow(instacart)` rows and ... columns. 
+
+Observations are the level of items in orders by user. There are user/order variables -- user ID, order ID, order day, and order hour. There are also item variables -- name, aisle, department, and some numeric codes. 
+
 How many aisles are there, and which aisles are the most items ordered from?
-Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
-Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
-Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+```{r}
+instacart %>%
+  count(aisle) %>%
+  arrange(desc(n))
+```
+
+Let's make a plot 
+```{r}
+instacart %>%
+  count(aisle) %>%
+  filter(n > 10000) %>%
+  mutate(
+    aisle = factor(aisle),
+    aisle = fct_reorder(aisle, n)
+  ) %>%
+  ggplot(aes(x = aisle, y = n)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+Make a table !
+```{r}
+instacart %>%
+  filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>%
+  group_by(aisle) %>%
+  count(product_name) %>%
+  mutate(rank = min_rank(desc(n))) %>%
+  filter(rank < 4) %>%
+  arrange(aisle, rank) %>%
+  knitr::kable()
+```
+
+Apples vs. ice cream..
+```{r}
+instacart %>%
+  filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>%
+  group_by(product_name, order_dow) %>%
+  summarize(mean_hour = mean(order_hour_of_day)) %>%
+  pivot_wider(
+    names_from = order_dow,
+    values_from = mean_hour
+  )
+```
 
 
 ## Problem 2
 
-Import and clean the accelerometer dataset. Then add the weekday vs weekend variable and encode data with reasonable variable classes
+Import and clean the accelerometer dataset. After data is tidy, add the *weekday vs weekend* variable and encode data with reasonable variable classes.
 ```{r accelerometer_tidy_df}
 accelerometer_df = read_csv("./Data/accel_data.csv") %>%
   janitor::clean_names() %>%
@@ -36,49 +99,32 @@ accelerometer_df = read_csv("./Data/accel_data.csv") %>%
     day = forcats::fct_relevel(
       day, "Monday", "Tuesday","Wednesday", "Thursday", "Friday", "Saturday", "Sunday" ))
 ```
+**Accelerometers Data Description**:
+The Accelerometers data set contains device obtained information measuring activity within a one minute interval for a 24 hour cycle starting at midnight.  The following variables exist in the data set `r ls(accelerometer_df)`. There are a total of `r nrow(accelerometer_df)` rows and `r ncol(accelerometer_df)` columns in our final data set. 
 
-The accelerometer dataset contains information self-reported physical activity over a 24 hour cycle. The following variables exist in the dataset `r ls(accelerometer_df)`. There are a total of `r nrow(accelerometer_df)` rows and `r ncol(accelerometer_df)` columns in our final dataset. 
-
-Aggregate accross minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
+Using your tidied data set, aggregate across minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
 ```{r total activity_df}
-aggregate_activity_df = 
-  accelerometer_df %>% 
-  group_by(time) %>% 
-  summarize(total_activity_df = sum(activity_count, na.rm = TRUE)) 
-#%>% knitr::kable(aggregate_activity_df)
+ accelerometer_df %>% 
+  group_by(week,day) %>% 
+  summarize(total_activity_df = sum(activity_count, na.rm = TRUE)) %>% 
+pivot_wider(names_from = "day", 
+  values_from = "total_activity_df") %>%
+  knitr::kable() 
 ```
+**Total Activity Data Trend**:
+Based on the table above, there seems to be a trend in increase of activity on weekends in the beginning weeks (week 1 and 2). Then the values begin to increase significantly during the weekdays in subsequent weeks. Overall there is indirect proportional relationship between weekdays and weekend: as activity count increases during the weekends, the activity count of weekdays decreases and vice-versa. 
 
 Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
-
 ```{r}
 accelerometer_df %>%
   ggplot(aes(x = time, y = activity_count, color = day)) + 
-  geom_point() 
-#fix order of data 
+  geom_point(alpha = 0.5) +
+  #geom_smooth(aes(group = day), se = FALSE) +
+  labs(
+    title = "24hr activity time colored by day of the week",
+    x = "24-hour activity time (minutes)",
+    y = "Activity per hour ")
 ```
-Describe in words any patterns or conclusions you can make based on this graph.
-
-
-## Problem 3
-
-Import data
-```{r}
-library(p8105.datasets)
-data("ny_noaa")
-```
-To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and indicating the extent to which missing data is an issue.
-```{r}
-ny_noaa_df = ny_noaa %>% separate('date', c( 'year','month','day')) %>% 
-  mutate(
-    year = factor(year), 
-    month = factor(month), 
-    day = factor(day), 
-    prcp =
-      as.integer(prcp), 
-    tmax = as.integer(tmax), 
-    tmin = as.integer(tmin)) %>% 
-  drop_na()
-```
-
-
+**Description** 
+Based on the single-panel plot above, we observe a greater activity count on days like Saturday and Sunday. The overall activity count seems to increase for most days, including weekdays, later in the 24-hour activity cycle around minute 1400. 
 
