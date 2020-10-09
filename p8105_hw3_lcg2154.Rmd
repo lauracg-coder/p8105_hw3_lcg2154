@@ -20,31 +20,19 @@ Make a table showing the mean hour of the day at which Pink Lady Apples and Coff
 
 ## Problem 2
 
-Import and clean the accelerometer dataset: 
-```{r accelerometer_tidy}
+Import and clean the accelerometer dataset. Then add the weekday vs weekend variable and encode data with reasonable variable classes
+```{r accelerometer_tidy_df}
 accelerometer_df = read_csv("./Data/accel_data.csv") %>%
   janitor::clean_names() %>%
-  pivot_longer(activity_1:activity_1440, names_to = 'time in minutes', values_to = 'activity_count') 
+  drop_na()  %>%
+  pivot_longer(activity_1:activity_1440, names_to = 'time', names_prefix = 'activity_', values_to = 'activity_count') %>% 
+  mutate(
+    day = as.factor(day), 
+    time = as.numeric(time)) %>% 
+  mutate(
+    weekend = ifelse(day == c("Saturday", "Sunday"),1,0), 
+    weekend = case_when(weekend == 1 ~ "weekend", weekend == 0 ~ "weekday" ))
 ```
 
-Add the weekday vs weekend variable
-```{r}
- accelerometer_df %>%
-  mutate()
-```
-
-encode data with reasonable variable classes
-```{r}
-
-```
-
-
-
-## Problem 3
-
-Import data
-```{r}
-library(p8105.datasets)
-data("ny_noaa")
-```
+The accelerometer dataset contains information self-reported physical activity over a 24 hour cycle. The following variables exist in the dataset `r ls(accelerometer_df)`. There are a total of `r nrow(accelerometer_df)` rows and `r ncol(accelerometer_df)` columns in our final dataset. 
 
