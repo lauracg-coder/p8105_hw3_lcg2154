@@ -100,7 +100,6 @@ accelerometer_df = read_csv("./Data/accel_data.csv") %>%
     day = forcats::fct_relevel(
       day, "Monday", "Tuesday","Wednesday", "Thursday", "Friday", "Saturday", "Sunday" ))
 ```
-**Accelerometers Data Description**:
 The Accelerometers data set contains device obtained information measuring activity within a one minute interval for a 24 hour cycle starting at midnight.  The following variables exist in the data set `r ls(accelerometer_df)`. There are a total of `r nrow(accelerometer_df)` rows and `r ncol(accelerometer_df)` columns in our final data set. 
 
 Using your tidied data set, aggregate across minutes to create a total activity variable for each day, and specify apparent trends. 
@@ -112,7 +111,6 @@ pivot_wider(names_from = "day",
   values_from = "total_activity_df") %>%
   knitr::kable() 
 ```
-**Total Activity Data Trend**:
 Based on the table above, there seems to be a trend in increase of activity on weekends in the beginning weeks (week 1 and 2). Then the values begin to increase significantly during the weekdays in subsequent weeks especially week 5. Overall there is indirect proportional relationship between weekdays and weekend: as activity count increases during the weekends, the activity count of weekdays decreases and vice-versa. 
 
 Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
@@ -125,13 +123,14 @@ accelerometer_df %>%
     x = " Activity time (minutes)",
     y = "Activity Count ")
 ```
-**Description** 
 Based on the single-panel plot above, we observe a greater activity count on days like Saturday and Sunday. The overall activity count seems to increase for most days, including weekdays, later in the 24-hour activity cycle around minute 1400. The activity increase in the beginning and end of the activity time which accurately represents mornings and nighttime that generally involve less activity. 
 
 ## Problem 3
 
 Import data
 ```{r}
+library(patchwork)
+library(ggridges)
 library(p8105.datasets)
 data("ny_noaa")
 ```
@@ -172,33 +171,41 @@ Jan_July_averagemax_df =  ny_noaa_df  %>%
   geom_point() +
   geom_path() +
   facet_grid(~ month) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   labs( 
-     title = "Mean average temperature for January and July across stations and years", 
+     title = "Mean average temperature for January and July across stations", 
       x = "year", 
      y = "average max temperature(C)")
-#structure is conserving between stations, one year warmer than other
+
 ```
+The two panel plot above shows a significant difference in the average maximum temperatures in January and July. As expected the average maximum temperatures in January do not exceed 15 degrees Celsius as it is winter in New York. There are no significant outliters the above data set. However, there is an increase in average temperature in later years during the month of January.The average temperature over the years in July seems to stay within a specific range of 20-30 degrees Celsius. 
 
 Make a two-panel plot showing the **t-max** vs **t-min** for the full data set 
 ```{r}
 tmax_tmin_df =
   ny_noaa_df %>%
-  ggplot(aes(x = tmin, y = tmax)) + geom_hex()
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_hex() +
+  labs( 
+     title = "Two-Panel Plot of the Maximum and Minimum Temperatures", 
+      x = "Minimum Temperatures (C)", 
+     y = "Maximum Temperature(C)")
 ```
 Make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
 ```{r}
 snowfall_df = 
   ny_noaa_df %>%
-  drop_na() %>%
-  filter( 'snow' > 0, 'snow' < 100 ) %>%
-  ggplot(aes(x = year , y = snow, color = year)) +
-  geom_boxplot() +
-  labs(
-    title = "yearly snowfall greater than 0 and less than 100",
-    x = "Year", 
-    y = "Snowfall Values (mm)") +
-  theme(legend.position = "none")
-
+  filter( snow > 0, snow < 100 ) %>%
+  ggplot(aes(x = snow , y = as.factor(year))) +
+  geom_density_ridges(alpha = 1, adjust = 1) +
+  theme(axis.text.x = element_text(angle = 20, vjust = 1, hjust = 1)) +
+  labs( 
+     title = "Snowfall Distribution", 
+      x = "Snowfall (mm)", 
+     y = "Year") +
+  scale_x_continuous(breaks = c(0, 25, 50, 75, 100, 125, 150, 175))
+ 
+tmax_tmin_df / snowfall_df
 ```
 
 
